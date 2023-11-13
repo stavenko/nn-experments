@@ -20,8 +20,7 @@ impl NutritionValue {
     pub(crate) fn to_tensor<B: Backend>(&self, device: B::Device) -> Tensor<B, 1, Int> {
         let bytes = self.to_bytes().map(|b| b as i32);
         let tensor = Tensor::from_ints(bytes);
-        tensor.to_device(&device);
-        tensor
+        tensor.to_device(&device)
     }
 
     pub fn create_random_value() -> Self {

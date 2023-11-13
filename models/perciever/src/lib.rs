@@ -3,10 +3,13 @@ use burn::{
     module::{Module, Param},
     nn::{
         attention::{MhaInput, MultiHeadAttention, MultiHeadAttentionConfig},
+        loss::CrossEntropyLoss,
         LayerNormConfig, Linear, LinearConfig,
     },
-    tensor::{backend::Backend, Distribution, Tensor},
+    tensor::{backend::Backend, Distribution, Int, Tensor},
+    train::ClassificationOutput,
 };
+mod nutrition_lables;
 
 #[derive(Config)]
 pub struct PerceiverConfig {
@@ -211,12 +214,21 @@ impl<B: Backend> Perceiver<B> {
         self.decoder.forward(latents)
     }
 
-    fn forward(&self, input: Tensor<B, 3>) -> Tensor<B, 3> {
+    pub fn forward(&self, input: Tensor<B, 3>) -> Tensor<B, 2> {
         let new_latents = self.encode(input);
         let new_latents = self.process(new_latents);
         let output = self.decode(new_latents);
 
-        output
+        output.reshape([-1, 1])
+    }
+    pub fn forward_classification(
+        &self,
+        input: Tensor<B, 3>,
+        target: Tensor<B, 1, Int>,
+    ) -> ClassificationOutput<B> {
+        let output = self.forward(input);
+        let loss = CrossEntropyLoss::new(None).forward(output.clone(), target.clone());
+        ClassificationOutput::new(loss, output, target)
     }
 }
 

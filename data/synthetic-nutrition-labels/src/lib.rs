@@ -1,6 +1,6 @@
 use burn::{
     data::dataloader::batcher::Batcher,
-    tensor::{backend::Backend, Tensor},
+    tensor::{backend::Backend, ops::TensorOps, Tensor},
 };
 
 mod loader;
@@ -13,7 +13,13 @@ struct SyntheticNutritionLablesBatcher<B: Backend> {
 impl<B: Backend> Batcher<NutritionLabelTestSample<B>, NutritionLabelsBatch<B>>
     for SyntheticNutritionLablesBatcher<B>
 {
-    fn batch(&self, items: Vec<NutritionLabelTestSample<B>>) -> NutritionLabelsBatch<B> {}
+    fn batch(&self, items: Vec<NutritionLabelTestSample<B>>) -> NutritionLabelsBatch<B> {
+        let labels = Tensor::cat(items.iter().map(|sample| sample.label.clone()).collect(), 0)
+            .to_device(&self.device);
+        let images = Tensor::cat(items.into_iter().map(|sample| sample.image).collect(), 0)
+            .to_device(&self.device);
+        NutritionLabelsBatch { images, labels }
+    }
 }
 
 impl<B: Backend> SyntheticNutritionLablesBatcher<B> {
@@ -22,9 +28,9 @@ impl<B: Backend> SyntheticNutritionLablesBatcher<B> {
     }
 }
 
-struct NutritionLabelsBatch<B: Backend> {
-    pub images: Tensor<B, 4>,
-    pub labels: Tensor<B, 2>,
+pub struct NutritionLabelsBatch<B: Backend> {
+    pub images: Tensor<B, 3>,
+    pub labels: Tensor<B, 1>,
 }
 
 struct NutritionLabelTestSample<B: Backend> {

@@ -3,6 +3,7 @@ resolver = '2'
 
 members = [
   "models/perciever",
+  "applications/nutrition-labels",
   "data/synthetic-nutrition-labels",
 #"common/transformers",
 ]
