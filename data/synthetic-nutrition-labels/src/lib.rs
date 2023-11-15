@@ -1,12 +1,13 @@
 use burn::{
     data::dataloader::batcher::Batcher,
-    tensor::{backend::Backend, ops::TensorOps, Tensor},
+    tensor::{backend::Backend, ops::TensorOps, Int, Tensor},
 };
 
 mod loader;
 mod types;
+pub use loader::SyntheticNutritionLablesLoader;
 
-struct SyntheticNutritionLablesBatcher<B: Backend> {
+pub struct SyntheticNutritionLablesBatcher<B: Backend> {
     device: B::Device,
 }
 
@@ -14,26 +15,41 @@ impl<B: Backend> Batcher<NutritionLabelTestSample<B>, NutritionLabelsBatch<B>>
     for SyntheticNutritionLablesBatcher<B>
 {
     fn batch(&self, items: Vec<NutritionLabelTestSample<B>>) -> NutritionLabelsBatch<B> {
-        let labels = Tensor::cat(items.iter().map(|sample| sample.label.clone()).collect(), 0)
-            .to_device(&self.device);
-        let images = Tensor::cat(items.into_iter().map(|sample| sample.image).collect(), 0)
-            .to_device(&self.device);
+        let label_tensors = items
+            .iter()
+            .map(|sample| sample.label.clone().unsqueeze())
+            .collect();
+
+        let image_tensors = items
+            .into_iter()
+            .map(|sample| sample.image.unsqueeze())
+            .collect();
+        let labels = Tensor::cat(label_tensors, 0).to_device(&self.device);
+        let images = Tensor::cat(image_tensors, 0).to_device(&self.device);
+        tracing::info!(
+            "loaded batch of {:?} and  {:?}",
+            images.shape(),
+            labels.shape()
+        );
+
         NutritionLabelsBatch { images, labels }
     }
 }
 
 impl<B: Backend> SyntheticNutritionLablesBatcher<B> {
-    fn new(device: B::Device) -> Self {
+    pub fn new(device: B::Device) -> Self {
         Self { device }
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct NutritionLabelsBatch<B: Backend> {
-    pub images: Tensor<B, 3>,
-    pub labels: Tensor<B, 1>,
+    pub images: Tensor<B, 4>,
+    pub labels: Tensor<B, 2>,
 }
 
-struct NutritionLabelTestSample<B: Backend> {
+#[derive(Debug, Clone)]
+pub struct NutritionLabelTestSample<B: Backend> {
     pub image: Tensor<B, 3>,
     pub label: Tensor<B, 1>,
 }

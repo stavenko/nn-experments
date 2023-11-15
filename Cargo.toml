@@ -2,8 +2,11 @@
 resolver = '2'
 
 members = [
-  "models/perciever",
+  "models/perceiver",
+  "models/bare_attention",
+  "models/nutrition-viewer",
   "applications/nutrition-labels",
   "data/synthetic-nutrition-labels",
+
 #"common/transformers",
 ]

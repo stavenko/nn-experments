@@ -1,11 +1,13 @@
 [package]
-name = "perciever"
+name = "perceiver"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.75"
 burn = { version = "0.10.0", features = ["autodiff", "wgpu", "burn-train", "train", "train-metrics"] }
+log = "0.4.20"
 serde = "1.0.192"
 synthetic-nutrition-labels = { version = "0.1.0", path = "../../data/synthetic-nutrition-labels" }

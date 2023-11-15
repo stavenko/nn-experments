@@ -1,4 +1,5 @@
-use burn::tensor::{Data, Shape};
+use burn::data::dataset::Dataset;
+use burn::tensor::{Data, Int, Shape};
 use resvg::tiny_skia;
 use resvg::usvg::{self, fontdb};
 use resvg::usvg::{TreeParsing, TreeTextToPath};
@@ -11,16 +12,30 @@ use burn::tensor::{backend::Backend, Tensor};
 use rand::seq::SliceRandom;
 
 use crate::types::NutritionValue;
+use crate::NutritionLabelTestSample;
 
-pub struct SyntheticNutritionLablesLoader {
+pub struct SyntheticNutritionLablesLoader<B: Backend> {
+    device: B::Device,
     root_dir: PathBuf,
     template_filenames: Vec<String>,
     tera: tera::Tera,
     samples_available: usize,
 }
 
-impl SyntheticNutritionLablesLoader {
-    pub fn new(templates_dir: PathBuf) -> anyhow::Result<Self> {
+impl<B: Backend> Dataset<NutritionLabelTestSample<B>> for SyntheticNutritionLablesLoader<B> {
+    fn get(&self, nth: usize) -> Option<NutritionLabelTestSample<B>> {
+        self.get_random_sample()
+            .ok()
+            .map(|(image, label)| NutritionLabelTestSample { image, label })
+    }
+
+    fn len(&self) -> usize {
+        10000
+    }
+}
+
+impl<B: Backend> SyntheticNutritionLablesLoader<B> {
+    pub fn new(templates_dir: PathBuf, device: B::Device) -> anyhow::Result<Self> {
         let tera_glob = format!(
             "{}/*",
             templates_dir.to_str().ok_or(anyhow::Error::msg("wtf"))?
@@ -40,11 +55,12 @@ impl SyntheticNutritionLablesLoader {
                         "got some problems, on converting data to str",
                     ))?;
 
-            tera.add_template_file(file.to_owned(), Some(file_name));
+            tera.add_template_file(file.to_owned(), Some(file_name))?;
             template_filenames.push(file_name.to_string());
         }
 
         Ok(Self {
+            device,
             root_dir: templates_dir.to_path_buf(),
             template_filenames,
             tera,
@@ -52,10 +68,7 @@ impl SyntheticNutritionLablesLoader {
         })
     }
 
-    pub fn get_random_sample<B: Backend>(
-        &mut self,
-        device: B::Device,
-    ) -> anyhow::Result<(Tensor<B, 3>, Tensor<B, 1>)> {
+    pub fn get_random_sample(&self) -> anyhow::Result<(Tensor<B, 3>, Tensor<B, 1>)> {
         let sample = NutritionValue::create_random_value();
         let mut rng = rand::thread_rng();
         let random_template = self
@@ -69,16 +82,15 @@ impl SyntheticNutritionLablesLoader {
         let data = Data::<u8, 3>::new(pixmap, Shape::new([w, h, 4])).convert();
         // resvg saves as 4 color channel. in our case, we pretty sure, it is not relevant.
         // So we remove whole dimension and permute tensor to comply with common cases
-        let xt = Tensor::from_data_device(data, &device);
-        let xt = xt // w, h, c
-            .swap_dims(0, 2) // c, h, w
-            .swap_dims(1, 2)
-            / 255.0; // c, w, h
-                     //let xt = xt.to_device(tch::Device::Mps);
+        let xt = Tensor::from_data_device(data, &self.device);
+        let xt = xt.swap_dims(0, 2);
+        let xt = xt.swap_dims(1, 2);
+        let xt = xt.slice([0..3, 0..w, 0..h]);
+        let xt = xt / 255.;
 
-        let expected_result = sample.to_tensor(device);
+        let expected_result = Tensor::from_floats(sample.as_array());
 
-        Ok((xt, expected_result.float()))
+        Ok((xt, expected_result))
     }
 }
 

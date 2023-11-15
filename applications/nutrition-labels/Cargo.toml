@@ -6,6 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.75"
 burn = { version = "0.10.0", features = ["train-metrics", "train", "wgpu", "burn-train"] }
-perciever = { version = "0.1.0", path = "../../models/perciever" }
+clap = { version = "4.4.8", features = ["derive"] }
+perceiver = { version = "0.1.0", path = "../../models/perceiver" }
 synthetic-nutrition-labels = { version = "0.1.0", path = "../../data/synthetic-nutrition-labels" }

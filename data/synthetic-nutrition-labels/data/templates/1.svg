@@ -20,7 +20,6 @@
     .inclined {
        transform-box: fill-box;
        transform-origin: top left;
-       transform: rotate(-3deg);
     }
 
     .back {
@@ -39,7 +38,7 @@
   <text x = "42" y = "79"  class="inclined numbers">15</text>
 
   <rect x = "121" y = "60" width="14" height ="20" fill="#fff" class="inclined back"/>
-  <text x = "121" y = "75"  class="inclined numbers">41</text>
+  <text x = "121" y = "75" transform="rotate(-0.05235987755982988)" class="inclined numbers">41</text>
 
   <rect x = "179" y = "58" width="16" height ="20" fill="#fff" class="inclined back "/>
   <text x = "180" y = "71"  class="inclined numbers">9</text>

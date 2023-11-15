@@ -12,3 +12,4 @@ rand = "0.8.5"
 resvg = "0.36.0"
 serde = { version = "1.0.192", features = ["derive"] }
 tera = "1.19.1"
+tracing = "0.1.40"
